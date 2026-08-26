@@ -16,7 +16,7 @@ from sklearn.feature_extraction.text import TfidfVectorizer
 
 
 
-df = pd.read_csv("E:\\Project\\Recommender System\\movies_metadata.csv")
+df = pd.read_csv("\your\path\to\movies_metadata.csv")
 
 
 df = df.drop_duplicates().reset_index(drop = True)

@@ -1,32 +1,32 @@
-🎬 Production Movie Recommender System: Comprehensive Technical Architecture & Pipeline Documentation
+🎬 Production Movie Recommender System
 
-A hybrid, content-based recommendation platform integrating Natural Language Processing (NLP), Sparse Vector Space Modeling, a FastAPI asynchronous backend, Live TMDB REST API ingestion, an interactive Streamlit user interface, and an SQLite telemetry database.
+A hybrid, content-based movie recommendation platform built with NLP, TF-IDF, FastAPI, the TMDB REST API, Streamlit, and SQLite.
 
 📑 Table of Contents
 
-[Executive Summary & High-Level Architecture](#1-executive-summary--high-level-architecture)
+Executive Summary & High-Level Architecture
 
-[Phase 1: Data Ingestion & Exploratory Data Analysis (EDA)](#phase-1-data-ingestion--exploratory-data-analysis-eda)
+Phase 1: Data Ingestion & Exploratory Data Analysis (EDA)
 
-[Phase 2: Feature Engineering & NLP Preprocessing Pipeline](#phase-2-feature-engineering--nlp-preprocessing-pipeline)
+Phase 2: Feature Engineering & NLP Preprocessing Pipeline
 
-[Phase 3: Mathematical Vector Space Modeling (TF-IDF & CSR Matrices)](#phase-3-mathematical-vector-space-modeling-tf-idf--csr-matrices)
+Phase 3: Mathematical Vector Space Modeling (TF-IDF & CSR Matrices)
 
-[Phase 4: Similarity Metric Derivation & Ranking Mechanics](#phase-4-similarity-metric-derivation--ranking-mechanics)
+Phase 4: Similarity Metric Derivation & Ranking Mechanics
 
-[Phase 5: Asynchronous Microservice Layer (FastAPI)](#phase-5-asynchronous-microservice-layer-fastapi)
+Phase 5: Asynchronous Microservice Layer (FastAPI)
 
-[Phase 6: Frontend Architecture & Dynamic Routing (Streamlit)](#phase-6-frontend-architecture--dynamic-routing-streamlit)
+Phase 6: Frontend Architecture & Dynamic Routing (Streamlit)
 
-[Phase 7: Behavioral Analytics & Relational Telemetry (SQLite)](#phase-7-behavioral-analytics--relational-telemetry-sqlite)
+Phase 7: Behavioral Analytics & Relational Telemetry (SQLite)
 
-[Installation & Operational Guide](#installation--operational-guide)
+Installation & Operational Guide
 
-[Technical Glossaries & Concept Reference](#technical-glossaries--concept-reference)
+Technical Glossaries & Concept Reference
 
-1. Executive Summary & High-Level Architecture
+1. Overview & System Architecture
 
-Traditional recommendation systems commonly suffer from cold-start problems and catastrophic memory overhead when scaling to large catalogs. This system implements an optimized, content-based recommendation pipeline paired with real-time metadata enrichment and user interaction telemetry.
+This project uses a content-based recommendation pipeline with real-time movie information and user interaction tracking.
 
 End-to-End System Workflow
 
@@ -40,13 +40,13 @@ On-the-fly Dot-Product Ranking - Genre Discovery │ ▼ HTTP JSON API [ Phase 6
 
 ---
 
-Phase 1: Data Ingestion & Exploratory Data Analysis (EDA)
+Phase 1: Data Ingestion & EDA
 
 The foundation of the recommendation engine relies on the Movies Metadata Dataset (`movies_metadata.csv`), containing metadata for 45,466 feature films.
 
 1. Data Audit & Null Analysis
 
-Raw metadata analysis revealed significant sparsity across multiple critical columns:
+The initial data analysis showed missing values in several important columns:
 
 Total rows: `45,466`
 
@@ -80,9 +80,9 @@ The `genres` attribute in the raw dataset is formatted as a serialized JSON stri
 
 Using Python’s ast.literal_eval, this was extracted into clean, space-delimited string representations: $$\text{"Animation Comedy Family"}$$
 
-Phase 2: Feature Engineering & NLP Preprocessing Pipeline
+Phase 2: Feature Engineering & NLP Preprocessing
 
-To calculate semantic similarity between films, the metadata must be consolidated into a unified descriptive document and linguistically normalized.
+To compare movies based on their content, the metadata is combined into one text field and then cleaned and normalized.
 
 ┌──────────────────┐     ┌──────────────────┐     ┌──────────────────┐
 
@@ -138,7 +138,7 @@ To calculate semantic similarity between films, the metadata must be consolidate
 
 1. Composite Document Creation (tags)
 
-A single feature string was engineered by concatenating the plot narrative, genre classifiers, and marketing hooks: $$\text{tags} = \text{overview} \parallel \text{" "} \parallel \text{genres} \parallel \text{" "} \parallel \text{tagline}$$
+A single feature string is created by combining the plot, genres, and tagline: $$\text{tags} = \text{overview} \parallel \text{" "} \parallel \text{genres} \parallel \text{" "} \parallel \text{tagline}$$
 
 Engineering Rationale: An overview explains the story (e.g., "space exploration, black hole"), genres provide categorical grouping (e.g., "Adventure Drama Sci-Fi"), and taglines highlight tone (e.g., "Mankind was born on Earth. It was never meant to die here."). Combining them creates a comprehensive semantic fingerprint for each film.
 
@@ -166,9 +166,9 @@ Stemming: Heuristically chops word affixes (e.g., "universe" $\rightarrow$ "
 
 Lemmatization: Uses a complete lexical database (WordNet) to analyze the morphological structure of words, transforming inflections into their canonical dictionary headword (lemma): $$\text{"destabilized"} \rightarrow \text{"destabilize"}, \quad \text{"superheroes"} \rightarrow \text{"superhero"}$$
 
-Phase 3: Mathematical Vector Space Modeling (TF-IDF & CSR Matrices)
+Phase 3: TF-IDF & Vector Space Modeling
 
-Computers cannot compare raw strings directly. Text must be projected into a high-dimensional geometric vector space.
+Raw text cannot be compared directly, so it is converted into numerical vectors.
 
 1. Term Frequency ($TF$)
 
@@ -208,9 +208,9 @@ The Dense Memory Problem: Storing $45,447 \times 1,068,907$ as standard 64-bit 
 
 The Sparse Solution (CSR): Since any individual movie description contains at most a few dozen unique words, $99.99%$ of matrix entries are zero. The Compressed Sparse Row (CSR) data structure stores only non-zero values using three 1D arrays (data, indices, indptr): $$\text{Stored Elements: } 2,711,647 \quad (\approx 32.7 \text{ Megabytes})$$ This represents an over $10,000\times$ memory reduction, allowing the entire vector space to reside directly in RAM.
 
-Phase 4: Similarity Metric Derivation & Ranking Mechanics
+Phase 4: Similarity & Recommendation Ranking
 
-Once all movies are represented as unit vectors in the TF-IDF feature space, nearest neighbors can be retrieved.
+Once the movies are represented as TF-IDF vectors, similar movies can be found by comparing their vectors.
 
 1. Mathematical Comparison: Cosine Similarity vs. Euclidean Distance
 
@@ -272,7 +272,7 @@ order = np.argsort(-scores)
 
 This computation executes in under 15 milliseconds on a standard CPU.
 
-Phase 5: Asynchronous Microservice Layer (FastAPI)
+Phase 5: FastAPI Backend
 
 The inference engine is wrapped in an asynchronous REST service built with FastAPI (main.py).
 
@@ -318,7 +318,7 @@ Primary genre categorization.
 
 Genre Discovery Fallback: Executes a secondary query against TMDB's /discover/movie?with_genres={id} to surface popular contemporary films matching the primary genre.
 
-Phase 6: Frontend Architecture & Dynamic Routing (Streamlit)
+Phase 6: Streamlit Frontend
 
 The user-facing layer is built with Streamlit (app.py), engineered as a single-page reactive web application with state persistence.
 
@@ -368,9 +368,9 @@ When users type in the search bar, the UI sends asynchronous requests to /tmdb/
 
 The rendering engine calculates dynamic column subdivisions: $$\text{Rows} = \lceil \frac{\text{Total Cards}}{\text{Selected Columns}} \rceil$$ Each cell renders a movie card with high-resolution poster artwork, title truncation to prevent layout breaking, and an event listener button that triggers detail navigation.
 
-Phase 7: Behavioral Analytics & Relational Telemetry (SQLite)
+Phase 7: User Activity & SQLite
 
-Recommendation engines improve over time by capturing user interaction data. The system includes a persistent SQLite database (user_history.db) managed via 
+The system records user interactions in a persistent SQLite database (user_history.db) managed via 
 
 db.py
 
@@ -430,7 +430,7 @@ Implicit Feedback (log_click): Records item selection events when a user clicks
 
 Engagement Quantification (log_watch): Tracks session watch duration in seconds. This provides explicit retention metrics for future Collaborative Filtering and Matrix Factorization algorithms.
 
-Installation & Operational Guide
+Installation & Setup
 
 1. Prerequisites
 
@@ -496,7 +496,7 @@ streamlit run app.py
 
 Access the application interface at: http://localhost:8501
 
-Technical Glossaries & Concept Reference
+Technical Glossary
 
 Bag-of-Words (BoW): An NLP representation that models text as an unordered collection of words, disregarding grammar and word order but maintaining frequency counts.
 
@@ -512,7 +512,7 @@ Cold-Start Problem: A well-known challenge in recommendation engines where the 
 
 ---
 
-Key Improvements in This Version
+Key Improvements
 
 Strictly Chronological: Flows logically through raw data $\rightarrow$ EDA $\rightarrow$ NLP cleaning $\rightarrow$ TF-IDF modeling $\rightarrow$ Cosine math $\rightarrow$ FastAPI backend $\rightarrow$ Streamlit frontend $\rightarrow$ SQLite tracking.
 
@@ -520,4 +520,4 @@ Deep Mathematical & Technical Rigor: Includes complete formulas for $TF$, $IDF$,
 
 Engineering Explanations: Explains why decisions were made (e.g., Lemmatization vs. Stemming, Cosine vs. Euclidean, on-the-fly dot products vs. full $O(N^2)$ precomputed similarity matrices, and CSR memory footprint savings).
 
-Matches Your Exact Codebase: Accurately reflects [movies_metadata.csv](file:///e:/Project/Recommender%20System/movies_metadata.csv), [recommender.ipynb](file:///e:/Project/Recommender%20System/recommender.ipynb), [main.py](file:///e:/Project/Recommender%20System/main.py), [app.py](file:///e:/Project/Recommender%20System/app.py), and [db.py](file:///e:/Project/Recommender%20System/db.py).
+Matches Your Exact Codebase: Accurately reflects movies_metadata.csv, recommender.ipynb, main.py, app.py, and db.py.
